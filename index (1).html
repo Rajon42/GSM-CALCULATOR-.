@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>জিওশিট GSM ক্যালকুলেটর</title>
+<style>
+  :root {
+    --bg: #eef1ee;
+    --surface: #ffffff;
+    --ink: #1c2b25;
+    --muted: #5d6b64;
+    --line: #cfd8d3;
+    --accent: #1f6f50;
+    --accent-ink: #ffffff;
+    --result-bg: #1f6f50;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121a16;
+      --surface: #1b2621;
+      --ink: #e8efeb;
+      --muted: #98a7a0;
+      --line: #33423b;
+      --accent: #4fb88a;
+      --accent-ink: #0d1a14;
+      --result-bg: #17382b;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans Bengali", "Kalpurush", "Nirmala UI", system-ui, sans-serif;
+    line-height: 1.5;
+    padding: 20px 16px 40px;
+  }
+  main { max-width: 440px; margin: 0 auto; }
+  h1 { font-size: 1.4rem; margin: 8px 0 4px; }
+  p.sub { margin: 0 0 20px; color: var(--muted); font-size: .95rem; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .row { display: flex; gap: 8px; margin-bottom: 14px; }
+  .field { flex: 1; min-width: 0; }
+  label { display: block; font-size: .9rem; margin-bottom: 4px; color: var(--muted); }
+  input, select {
+    width: 100%;
+    font: inherit;
+    font-size: 1.05rem;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px;
+  }
+  .unit { flex: 0 0 96px; }
+  input:focus-visible, select:focus-visible, button:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .result {
+    margin-top: 6px;
+    background: var(--result-bg);
+    color: #fff;
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+  }
+  .result .num { font-size: 2.6rem; font-weight: 700; line-height: 1.1; }
+  .result .lbl { opacity: .85; font-size: .95rem; }
+  .msg { color: var(--muted); font-size: .9rem; margin-top: 10px; min-height: 1.3em; }
+  button {
+    margin-top: 14px;
+    width: 100%;
+    font: inherit;
+    font-size: 1rem;
+    padding: 11px;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink);
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .formula { margin-top: 18px; font-size: .85rem; color: var(--muted); text-align: center; }
+</style>
+</head>
+<body>
+<main>
+  <h1>জিওশিট GSM ক্যালকুলেটর</h1>
+  <p class="sub">ওজন, দৈর্ঘ্য ও প্রস্থ দিলে GSM নিজে নিজে বের হবে।</p>
+
+  <div class="card">
+    <div class="row">
+      <div class="field">
+        <label for="w">ওজন</label>
+        <input id="w" type="number" inputmode="decimal" min="0" step="any" placeholder="যেমন 250">
+      </div>
+      <div class="field unit">
+        <label for="wu">একক</label>
+        <select id="wu">
+          <option value="1">গ্রাম</option>
+          <option value="1000">কেজি</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label for="l">দৈর্ঘ্য</label>
+        <input id="l" type="number" inputmode="decimal" min="0" step="any" placeholder="যেমন 10">
+      </div>
+      <div class="field">
+        <label for="b">প্রস্থ</label>
+        <input id="b" type="number" inputmode="decimal" min="0" step="any" placeholder="যেমন 5">
+      </div>
+      <div class="field unit">
+        <label for="du">একক</label>
+        <select id="du">
+          <option value="1">মিটার</option>
+          <option value="0.01">সেমি</option>
+          <option value="0.0254">ইঞ্চি</option>
+          <option value="0.3048">ফুট</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="result" aria-live="polite">
+      <div class="num" id="gsm">—</div>
+      <div class="lbl">GSM (গ্রাম প্রতি বর্গমিটার)</div>
+    </div>
+    <div class="msg" id="msg"></div>
+    <button type="button" id="clear">মুছে নতুন করে শুরু করুন</button>
+  </div>
+
+  <p class="formula">GSM = ওজন (গ্রাম) ÷ (দৈর্ঘ্য × প্রস্থ) (বর্গমিটারে)</p>
+</main>
+
+<script>
+  var $ = function (id) { return document.getElementById(id); };
+  var bn = "০১২৩৪৫৬৭৮৯";
+  function toBn(s) { return String(s).replace(/\d/g, function (d) { return bn[d]; }); }
+
+  function calc() {
+    var w = parseFloat($("w").value);
+    var l = parseFloat($("l").value);
+    var b = parseFloat($("b").value);
+    var wu = parseFloat($("wu").value);
+    var du = parseFloat($("du").value);
+    var out = $("gsm"), msg = $("msg");
+
+    if (!(w > 0) || !(l > 0) || !(b > 0)) {
+      out.textContent = "—";
+      msg.textContent = ($("w").value || $("l").value || $("b").value)
+        ? "তিনটি ঘরেই শূন্যের চেয়ে বড় সংখ্যা দিন।" : "";
+      return;
+    }
+    var grams = w * wu;
+    var area = (l * du) * (b * du);
+    var gsm = grams / area;
+    out.textContent = toBn(gsm.toFixed(1));
+    msg.textContent = "ক্ষেত্রফল: " + toBn(area.toFixed(3)) + " বর্গমিটার";
+  }
+
+  ["w", "l", "b", "wu", "du"].forEach(function (id) {
+    $(id).addEventListener("input", calc);
+    $(id).addEventListener("change", calc);
+  });
+  $("clear").addEventListener("click", function () {
+    ["w", "l", "b"].forEach(function (id) { $(id).value = ""; });
+    calc();
+    $("w").focus();
+  });
+</script>
+</body>
+</html>
